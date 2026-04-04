@@ -12,6 +12,7 @@ import FeeManagement from "./pages/student/FeeManagement";
 import CertificationCenter from "./pages/student/CertificationCenter";
 import AssignmentPage from "./pages/student/AssignmentPage";
 import Settings from "./pages/Settings";
+import RegisterStudent from "./pages/student/RegisterStudent";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -66,6 +67,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/courses" element={<MyCourses />} />
           <Route path="/students" element={<StudentManagement />} />
+          <Route path="/students/register" element={<RegisterStudent   />} />
           <Route path="/fees" element={<FeeManagement />} />
           <Route path="/tasks" element={<AssignmentPage />} />
           <Route path="/certificates" element={<CertificationCenter />} />
