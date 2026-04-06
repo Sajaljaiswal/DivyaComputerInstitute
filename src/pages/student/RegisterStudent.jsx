@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Mail, Phone, BookOpen, Calendar, 
-  ShieldCheck, Loader2, MapPin, GraduationCap, Hash, Users,
+  ShieldCheck, Loader2, MapPin, GraduationCap, Users,
   Search
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -14,6 +14,10 @@ export default function RegisterStudent() {
   const [availableCourses, setAvailableCourses] = useState([]);
   const [fetchingCourses, setFetchingCourses] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Get current date in YYYY-MM-DD format for the default value
+  const today = new Date().toISOString().split('T')[0];
+
   const [formData, setFormData] = useState({
     full_name: "",
     parent_name: "",
@@ -24,15 +28,14 @@ export default function RegisterStudent() {
     dob: "",
     address: "",
     education: "",
-    roll_no: "",
-    course_name: "", // Will be set once courses are loaded
-    total_fee: null, // Will be set once courses are loaded
-    admission_date: new Date().toISOString().split('T')[0],
+    // roll_no is removed - handled by DB
+    course_name: "", 
+    total_fee: null, 
+    admission_date: today, // Defaulted to today
     status: "active",
     photo_url: null
   });
 
-  // --- Fetch Courses from Backend ---
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -42,21 +45,17 @@ export default function RegisterStudent() {
           .order('name', { ascending: true });
 
         if (error) throw error;
-        
         setAvailableCourses(data || []);
         
-        // Set initial course selection if data exists
         if (data && data.length > 0) {
           setFormData(prev => ({ ...prev, course_name: data[0].name, total_fee: data[0].fee }));
         }
       } catch (err) {
         toast.error("Could not load courses list");
-        console.error(err);
       } finally {
         setFetchingCourses(false);
       }
     };
-
     fetchCourses();
   }, []);
 
@@ -75,6 +74,7 @@ export default function RegisterStudent() {
 
     setLoading(true);
     try {
+      // We do not send roll_no; Supabase will generate it automatically
       const { error } = await supabase.from("students").insert([formData]);
       if (error) throw error;
       toast.success("Student registered successfully!");
@@ -93,7 +93,6 @@ export default function RegisterStudent() {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 animate-in fade-in duration-500">
       <div className="max-w-3xl mx-auto">
-        
         <button 
           onClick={() => navigate(-1)}
           className="group flex items-center gap-2 text-slate-500 hover:text-orange-600 mb-4 text-sm font-bold transition-all"
@@ -105,7 +104,7 @@ export default function RegisterStudent() {
           <div className="p-6 bg-orange-500 text-white relative overflow-hidden">
              <div className="relative z-10">
                 <h1 className="text-2xl font-black italic tracking-tight">Student Enrollment</h1>
-                <p className="text-orange-100 text-xs font-medium">Complete the form below to register a new learner.</p>
+                <p className="text-orange-100 text-xs font-medium">Admission Date: {formData.admission_date}</p>
              </div>
              <User size={100} className="absolute -right-4 -bottom-4 text-orange-400/20 rotate-12" />
           </div>
@@ -140,10 +139,14 @@ export default function RegisterStudent() {
                   </div>
                 </div>
                 <div className="group">
-                  <label className={labelStyles}>Roll Number</label>
-                  <div className="relative"><Hash className={iconStyles} size={16} />
-                    <input type="text" className={inputStyles} placeholder="DIV-001"
-                      onChange={(e) => setFormData({...formData, roll_no: e.target.value})} />
+                  <label className={labelStyles}>Admission Date</label>
+                  <div className="relative"><Calendar className={iconStyles} size={16} />
+                    <input 
+                      type="date" 
+                      className={inputStyles}
+                      value={formData.admission_date}
+                      onChange={(e) => setFormData({...formData, admission_date: e.target.value})} 
+                    />
                   </div>
                 </div>
               </div>
@@ -196,7 +199,6 @@ export default function RegisterStudent() {
                   </div>
                 </div>
                 
-                {/* --- Dynamic Course Dropdown --- */}
                 <div className="space-y-2">
                   <div className="group">
                     <label className={labelStyles}>Search & Select Course</label>
