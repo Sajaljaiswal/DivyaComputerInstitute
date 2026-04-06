@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Mail, Phone, BookOpen, Calendar, 
-  ShieldCheck, Loader2, MapPin, GraduationCap, Hash, Users
+  ShieldCheck, Loader2, MapPin, GraduationCap, Hash, Users,
+  Search
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from "react-hot-toast";
@@ -12,7 +13,7 @@ export default function RegisterStudent() {
   const [loading, setLoading] = useState(false);
   const [availableCourses, setAvailableCourses] = useState([]);
   const [fetchingCourses, setFetchingCourses] = useState(true);
-
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     full_name: "",
     parent_name: "",
@@ -25,6 +26,7 @@ export default function RegisterStudent() {
     education: "",
     roll_no: "",
     course_name: "", // Will be set once courses are loaded
+    total_fee: null, // Will be set once courses are loaded
     admission_date: new Date().toISOString().split('T')[0],
     status: "active",
     photo_url: null
@@ -36,7 +38,7 @@ export default function RegisterStudent() {
       try {
         const { data, error } = await supabase
           .from('courses')
-          .select('name')
+          .select('name, fee')
           .order('name', { ascending: true });
 
         if (error) throw error;
@@ -45,7 +47,7 @@ export default function RegisterStudent() {
         
         // Set initial course selection if data exists
         if (data && data.length > 0) {
-          setFormData(prev => ({ ...prev, course_name: data[0].name }));
+          setFormData(prev => ({ ...prev, course_name: data[0].name, total_fee: data[0].fee }));
         }
       } catch (err) {
         toast.error("Could not load courses list");
@@ -57,6 +59,12 @@ export default function RegisterStudent() {
 
     fetchCourses();
   }, []);
+
+  const filteredCourses = useMemo(() => {
+    return availableCourses.filter(course => 
+      course.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, availableCourses]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -189,25 +197,40 @@ export default function RegisterStudent() {
                 </div>
                 
                 {/* --- Dynamic Course Dropdown --- */}
-                <div className="group">
-                  <label className={labelStyles}>Course</label>
-                  <div className="relative"><BookOpen className={iconStyles} size={16} />
-                    <select 
-                      className={`${inputStyles} appearance-none cursor-pointer`}
-                      onChange={(e) => setFormData({...formData, course_name: e.target.value})}
-                      value={formData.course_name}
-                      disabled={fetchingCourses}
-                    >
-                      {fetchingCourses ? (
-                        <option>Loading courses...</option>
-                      ) : availableCourses.length > 0 ? (
-                        availableCourses.map((c, index) => (
-                          <option key={index} value={c.name}>{c.name}</option>
-                        ))
-                      ) : (
-                        <option>No courses available</option>
-                      )}
-                    </select>
+                <div className="space-y-2">
+                  <div className="group">
+                    <label className={labelStyles}>Search & Select Course</label>
+                    <div className="relative mb-2">
+                      <Search className={iconStyles} size={16} />
+                      <input 
+                        type="text" 
+                        placeholder="Search courses..." 
+                        className={inputStyles}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <div className="relative">
+                      <BookOpen className={iconStyles} size={16} />
+                      <select 
+                        className={`${inputStyles} appearance-none cursor-pointer`}
+                        onChange={(e) => setFormData({...formData, course_name: e.target.value, total_fee: availableCourses.find(c => c.name === e.target.value)?.fee || null})}
+                        value={formData.course_name}
+                        disabled={fetchingCourses}
+                      >
+                        {fetchingCourses ? (
+                          <option>Loading courses...</option>
+                        ) : filteredCourses.length > 0 ? (
+                          filteredCourses.map((c, index) => (
+                            <option key={index} value={c.name}>
+                              {c.name} (₹{c.fee})
+                            </option>
+                          ))
+                        ) : (
+                          <option>No matches found</option>
+                        )}
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
