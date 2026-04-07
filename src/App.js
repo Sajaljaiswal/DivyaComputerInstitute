@@ -8,11 +8,11 @@ import Dashboard from "./pages/Dashboard";
 import Layout from "./pages/Layout";
 import MyCourses from "./pages/MyCourses";
 import StudentManagement from "./pages/student/StudentManagement";
-import FeeManagement from "./pages/student/FeeManagement";
-import CertificationCenter from "./pages/student/CertificationCenter";
-import AssignmentPage from "./pages/student/AssignmentPage";
 import Settings from "./pages/Settings";
 import RegisterStudent from "./pages/student/RegisterStudent";
+import FeeManagement from "./pages/FeeManagement";
+import AssignmentPage from "./pages/AssignmentPage";
+import CertificationCenter from "./pages/certificates/CertificationCenter";
 
 function App() {
   const [session, setSession] = useState(null);
