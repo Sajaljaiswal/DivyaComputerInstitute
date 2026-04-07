@@ -68,36 +68,87 @@ export default function CertificationCenter() {
       <html>
         <head>
           <title>Certificate+Marksheet - ${student.full_name}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Montserrat:wght@400;700&display=swap');
-            body { margin: 0; padding: 10mm; font-family: 'Times New Roman', serif; display: flex; justify-content: center; background: #fff; }
-            .cert-container { 
-              width: 210mm; height: 297mm; border: 10px double #8b5e3c; padding: 20px; 
-              background: #fffdf0; box-sizing: border-box; position: relative;
-            }
-            .header { text-align: center; }
-            .inst-name { font-size: 30px; font-weight: 900; color: #7c2d12; margin: 0; }
-            .badge-text { display: inline-block; background: #ea580c; color: white; padding: 2px 15px; border-radius: 20px; font-weight: bold; font-size: 14px; margin: 5px 0; font-family: 'Montserrat', sans-serif;}
-            .photo-box { position: absolute; top: 210px; left: 30px; width: 110px; height: 135px; border: 2px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #777;}
-            .content-text { text-align: center; font-style: italic; font-size: 17px; line-height: 1.5; margin: 15px 0 15px 130px; }
-            .content-text b { font-style: normal; color: #1e40af; text-decoration: underline; }
-            .info-row { display: flex; justify-content: space-between; font-weight: bold; margin: 5px 0; font-size: 13px; }
-            .marks-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; border: 1px solid #000; }
-            .marks-table th, .marks-table td { border: 1px solid #000; padding: 4px 8px; text-align: left; }
-            .marks-table th { background: #fdf2e9; }
-            .summary-panel { border-left: 1px solid #000; padding: 10px; vertical-align: top; width: 200px;}
-            .footer { position: absolute; bottom: 70px; width: calc(100% - 60px); display: flex; justify-content: space-between; align-items: flex-end; padding: 0 20px; }
-            .grade-scale { position: absolute; bottom: 20px; left: 20px; right: 20px; display: flex; font-size: 10px; font-weight: bold; text-align: center; color: white; }
-            .scale-box { flex: 1; padding: 4px; }
-            @media print { body { padding: 0; } .cert-container { border: 8px double #8b5e3c; } }
-          </style>
+         <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Montserrat:wght@400;700&display=swap');
+    
+    @page { size: A4; margin: 0; }
+    body { margin: 0; padding: 0; font-family: 'Times New Roman', serif; display: flex; justify-content: center; background: #fff; }
+    
+    .cert-container { 
+        width: 210mm; 
+        height: 297mm; 
+        border: 10px double #8b5e3c; 
+        padding: 15px 25px; 
+        background: #fffdf0; 
+        box-sizing: border-box; 
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .header { text-align: center; margin-bottom: 5px; }
+    .inst-name { font-size: 28px; font-weight: 900; color: #7c2d12; margin: 0; }
+    .badge-text { display: inline-block; background: #ea580c; color: white; padding: 1px 15px; border-radius: 20px; font-weight: bold; font-size: 13px; margin: 5px 0; font-family: 'Montserrat', sans-serif;}
+    
+    /* Adjusted photo box to sit correctly without collision */
+    .photo-box { position: absolute; top: 85px; left: 35px; width: 100px; height: 125px; border: 2px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #777; z-index: 10;}
+    
+    .content-text { text-align: center; font-style: italic; font-size: 16px; line-height: 1.4; margin: 10px 0 10px 130px; }
+    .content-text b { font-style: normal; color: #1e40af; text-decoration: underline; }
+    
+    .info-row { display: flex; justify-content: space-between; font-weight: bold; margin: 5px 0; font-size: 12px; }
+    
+    .marks-table { width: 100%; border-collapse: collapse; font-size: 10.5px; border: 1px solid #000; }
+    .marks-table th, .marks-table td { border: 1px solid #000; padding: 3.5px 8px; text-align: left; }
+    .marks-table th { background: #fdf2e9; }
+    
+    .summary-panel { border-left: 1px solid #000; padding: 8px; vertical-align: top; width: 180px;}
+    .qr-code { width: 80px; height: 80px; display: block; margin: 10px auto; }
+    
+    /* Reduced gap: Changed from absolute bottom to margin-top to follow table closely */
+    .footer { 
+        margin-top: 18rem; 
+        width: 100%; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: flex-end; 
+        padding: 0 10px; 
+    }
+    
+    .footer-sig { 
+        text-align: center; 
+        border-top: 1px solid #000; 
+        width: 220px; 
+        padding-top: 3px; 
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+    .grade-scale { 
+        position: absolute; 
+        bottom: 20px; 
+        left: 20px; 
+        right: 20px; 
+        display: flex; 
+        font-size: 10px; 
+        font-weight: bold; 
+        text-align: center; 
+        color: white; 
+    }
+    .scale-box { flex: 1; padding: 4px; }
+    
+    @media print { 
+        body { padding: 0; } 
+        .cert-container { border: 8px double #8b5e3c; } 
+    }
+</style>
         </head>
         <body>
           <div class="cert-container">
             <div class="header">
               <div style="display:flex; justify-content: space-between; font-size: 11px; font-weight: bold;">
-                <div style="text-align:left;">Affiliated with<br/>Mata Kanti Devi Institute of IT</div>
-                <div style="text-align:right;">UP/Govt/Reg.No. 1380<br/>2013-14/V-37661</div>
+                <div style="text-align:left;">Run by BSSST</div>
+                <div style="text-align:right;">UP/Govt/Reg.No. IN-UP58033026783122W</div>
               </div>
               <h1 class="inst-name">DIVYA TECHNICAL INSTITUTE</h1>
               <div class="badge-text">Certificate + Marksheet</div>
