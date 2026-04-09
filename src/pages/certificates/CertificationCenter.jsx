@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Award, Search, ShieldCheck, Star, Loader2, 
-  X, CheckCircle2, GraduationCap, Trophy, FileText, Printer, FileStack 
+  X, CheckCircle2, GraduationCap, Trophy, FileText, Printer, FileStack, Plus, Trash2
 } from 'lucide-react';
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
 
-// Module List Definition
-const MODULE_NAMES = [
+const DEFAULT_MODULES = [
   "Introduction to Computer Hardware", "Operating System, Fundamental, MS DOS, Windows 10",
   "MS Office - 2003, 2007, 2010", "Page Maker", "CorelDRAW", "Tally ERP 9 & Tally Prime",
   "PhotoShop", "5th Term (Communication Technology, Hindi & English Typing)",
@@ -25,10 +24,11 @@ export default function CertificationCenter() {
   const [selectedForGrad, setSelectedForGrad] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Advanced Form State for 16 Modules
+  // Dynamic Module State
+  const [activeModules, setActiveModules] = useState([]);
   const [gradForm, setGradForm] = useState({
     grade: 'Excellent',
-    moduleMarks: Array(16).fill(85) // Default starting marks
+    moduleMarks: []
   });
 
   useEffect(() => {
@@ -51,97 +51,67 @@ export default function CertificationCenter() {
     }
   };
 
+  // --- MODULE MANIPULATION ---
+  const addModule = () => {
+    setActiveModules([...activeModules, "New Module Name"]);
+    setGradForm(prev => ({ 
+      ...prev, 
+      moduleMarks: [...prev.moduleMarks, 85] 
+    }));
+  };
+
+  const removeModule = (index) => {
+    const updatedModules = activeModules.filter((_, i) => i !== index);
+    const updatedMarks = gradForm.moduleMarks.filter((_, i) => i !== index);
+    setActiveModules(updatedModules);
+    setGradForm(prev => ({ ...prev, moduleMarks: updatedMarks }));
+  };
+
+  const updateModuleName = (index, newName) => {
+    const updated = [...activeModules];
+    updated[index] = newName;
+    setActiveModules(updated);
+  };
+
   // Calculate Total Marks Dynamically
   const currentTotal = gradForm.moduleMarks.reduce((acc, curr) => acc + (parseInt(curr) || 0), 0);
+  const maxMarks = activeModules.length * 100;
 
-  // --- PRINT LOGIC (CERTIFICATE + MARKSHEET) ---
-  const printCombinedDoc = (student, marksArray) => {
+  // --- PRINT LOGIC ---
+  const printCombinedDoc = (student, modulesList, marksArray) => {
     const printWindow = window.open('', '_blank');
     const issueDate = new Date().toLocaleDateString('en-GB', {
       day: 'numeric', month: 'long', year: 'numeric'
     });
 
     const totalSecured = marksArray.reduce((a, b) => a + b, 0);
-    const percentage = ((totalSecured / 1600) * 100).toFixed(2);
+    const totalPossible = modulesList.length * 100;
+    const percentage = ((totalSecured / totalPossible) * 100).toFixed(2);
 
     printWindow.document.write(`
       <html>
         <head>
           <title>Certificate+Marksheet - ${student.full_name}</title>
-         <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Montserrat:wght@400;700&display=swap');
-    
-    @page { size: A4; margin: 0; }
-    body { margin: 0; padding: 0; font-family: 'Times New Roman', serif; display: flex; justify-content: center; background: #fff; }
-    
-    .cert-container { 
-        width: 210mm; 
-        height: 297mm; 
-        border: 10px double #8b5e3c; 
-        padding: 15px 25px; 
-        background: #fffdf0; 
-        box-sizing: border-box; 
-        position: relative;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .header { text-align: center; margin-bottom: 5px; }
-    .inst-name { font-size: 28px; font-weight: 900; color: #7c2d12; margin: 0; }
-    .badge-text { display: inline-block; background: #ea580c; color: white; padding: 1px 15px; border-radius: 20px; font-weight: bold; font-size: 13px; margin: 5px 0; font-family: 'Montserrat', sans-serif;}
-    
-    /* Adjusted photo box to sit correctly without collision */
-    .photo-box { position: absolute; top: 85px; left: 35px; width: 100px; height: 125px; border: 2px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #777; z-index: 10;}
-    
-    .content-text { text-align: center; font-style: italic; font-size: 16px; line-height: 1.4; margin: 10px 0 10px 130px; }
-    .content-text b { font-style: normal; color: #1e40af; text-decoration: underline; }
-    
-    .info-row { display: flex; justify-content: space-between; font-weight: bold; margin: 5px 0; font-size: 12px; }
-    
-    .marks-table { width: 100%; border-collapse: collapse; font-size: 10.5px; border: 1px solid #000; }
-    .marks-table th, .marks-table td { border: 1px solid #000; padding: 3.5px 8px; text-align: left; }
-    .marks-table th { background: #fdf2e9; }
-    
-    .summary-panel { border-left: 1px solid #000; padding: 8px; vertical-align: top; width: 180px;}
-    .qr-code { width: 80px; height: 80px; display: block; margin: 10px auto; }
-    
-    /* Reduced gap: Changed from absolute bottom to margin-top to follow table closely */
-    .footer { 
-        margin-top: 18rem; 
-        width: 100%; 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: flex-end; 
-        padding: 0 10px; 
-    }
-    
-    .footer-sig { 
-        text-align: center; 
-        border-top: 1px solid #000; 
-        width: 220px; 
-        padding-top: 3px; 
-        font-size: 13px;
-        font-weight: bold;
-    }
-
-    .grade-scale { 
-        position: absolute; 
-        bottom: 20px; 
-        left: 20px; 
-        right: 20px; 
-        display: flex; 
-        font-size: 10px; 
-        font-weight: bold; 
-        text-align: center; 
-        color: white; 
-    }
-    .scale-box { flex: 1; padding: 4px; }
-    
-    @media print { 
-        body { padding: 0; } 
-        .cert-container { border: 8px double #8b5e3c; } 
-    }
-</style>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+            @page { size: A4; margin: 0; }
+            body { margin: 0; padding: 0; font-family: 'Times New Roman', serif; display: flex; justify-content: center; background: #fff; }
+            .cert-container { width: 210mm; height: 297mm; border: 10px double #8b5e3c; padding: 15px 25px; background: #fffdf0; box-sizing: border-box; position: relative; display: flex; flex-direction: column; }
+            .header { text-align: center; margin-bottom: 5px; }
+            .inst-name { font-size: 28px; font-weight: 900; color: #7c2d12; margin: 0; }
+            .badge-text { display: inline-block; background: #ea580c; color: white; padding: 1px 15px; border-radius: 20px; font-weight: bold; font-size: 13px; margin: 5px 0; font-family: 'Montserrat', sans-serif;}
+            .photo-box { position: absolute; top: 85px; left: 35px; width: 100px; height: 125px; border: 2px solid #ccc; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #777; z-index: 10;}
+            .content-text { text-align: center; font-style: italic; font-size: 16px; line-height: 1.4; margin: 10px 0 10px 130px; }
+            .content-text b { font-style: normal; color: #1e40af; text-decoration: underline; }
+            .info-row { display: flex; justify-content: space-between; font-weight: bold; margin: 5px 0; font-size: 12px; }
+            .marks-table { width: 100%; border-collapse: collapse; font-size: 10.5px; border: 1px solid #000; }
+            .marks-table th, .marks-table td { border: 1px solid #000; padding: 3.5px 8px; text-align: left; }
+            .marks-table th { background: #fdf2e9; }
+            .summary-panel { border-left: 1px solid #000; padding: 8px; vertical-align: top; width: 180px;}
+            .footer { margin-top: auto; margin-bottom: 40px; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 10px; }
+            .grade-scale { position: absolute; bottom: 20px; left: 20px; right: 20px; display: flex; font-size: 10px; font-weight: bold; text-align: center; color: white; }
+            .scale-box { flex: 1; padding: 4px; }
+          </style>
         </head>
         <body>
           <div class="cert-container">
@@ -159,11 +129,11 @@ export default function CertificationCenter() {
             <div class="content-text">
               This is to certify that <b>${student.full_name}</b> has been awarded 
               <b>${student.course_name}</b> having completed the 
-              curriculum from our center with grade <b>${student.grade}</b> and 12 months given under our supervision.
+              curriculum from our center with grade <b>${student.grade}</b>.
             </div>
             <div class="info-row">
               <div>Issue Date: ${issueDate}</div>
-              <div style="text-align: right;">Certificate No.: 2022${student.id.toString().slice(0, 5)}<br/>Roll No: 133935</div>
+              <div style="text-align: right;">Roll No: 133935</div>
             </div>
             <table class="marks-table">
               <thead>
@@ -178,21 +148,21 @@ export default function CertificationCenter() {
                 <tr>
                   <td colspan="3" style="padding:0">
                     <table style="width: 100%; border-collapse: collapse; border:none;">
-                      ${MODULE_NAMES.map((name, i) => `
+                      ${modulesList.map((name, i) => `
                         <tr>
                           <td style="border:none; border-bottom: 1px solid #000; width: 73.5%;">${name}</td>
                           <td style="border:none; border-left: 1px solid #000; border-bottom: 1px solid #000; width: 13.5%; text-align:center;">100</td>
-                          <td style="border:none; border-left: 1px solid #000; border-bottom: 1px solid #000; width: 13%; text-align:center;">${marksArray[i]}</td>
+                          <td style="border:none; border-left: 1px solid #000; border-bottom: 1px solid #000; width: 13%; text-align:center;">${marksArray[i] || 0}</td>
                         </tr>
                       `).join('')}
                     </table>
                   </td>
                   <td class="summary-panel">
-                    <div style="margin-bottom: 8px;"><b>Total: ${totalSecured} / 1600</b></div>
+                    <div style="margin-bottom: 8px;"><b>Total: ${totalSecured} / ${totalPossible}</b></div>
                     <div style="margin-bottom: 8px;"><b>Percentage: ${percentage}%</b></div>
                     <div style="margin-bottom: 8px;"><b>Result: PASS</b></div>
                     <div style="margin-bottom: 8px;"><b>Grade: ${student.grade}</b></div>
-                    <img style="width:90px; margin-top:20px;" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${student.id}" />
+                    <img style="width:80px; margin-top:15px;" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${student.id}" />
                   </td>
                 </tr>
               </tbody>
@@ -200,7 +170,7 @@ export default function CertificationCenter() {
             <div class="footer">
               <div style="text-align: center;"><small>Official Seal</small></div>
               <div style="text-align: center; border-top: 1px solid #000; width: 200px; padding-top: 5px;">
-                 <b>Santosh Kumar Prajapati</b><br/>(Director)
+                  <b>Santosh Kumar Prajapati</b><br/>(Director)
               </div>
             </div>
             <div class="grade-scale">
@@ -221,11 +191,18 @@ export default function CertificationCenter() {
   const handleIssueAndPrint = async () => {
     setIsSubmitting(true);
     try {
+      // Map modules and marks together for JSONB storage
+      const moduleDataToSave = activeModules.map((name, index) => ({
+        name,
+        marks: gradForm.moduleMarks[index] || 0
+      }));
+
       const updateData = {
         status: "completed",
         grade: gradForm.grade,
         marks_obtained: currentTotal,
-        completion_date: new Date().toISOString().split('T')[0]
+        completion_date: new Date().toISOString().split('T')[0],
+        module_data: moduleDataToSave
       };
 
       const { error } = await supabase
@@ -235,10 +212,9 @@ export default function CertificationCenter() {
 
       if (error) throw error;
 
-      // Open print preview in new tab
-      printCombinedDoc({...selectedForGrad, ...updateData}, gradForm.moduleMarks);
+      printCombinedDoc({...selectedForGrad, ...updateData}, activeModules, gradForm.moduleMarks);
 
-      toast.success("Student Graduated Successfully!");
+      toast.success("Student Graduated & Data Saved!");
       setShowGradModal(false);
       fetchAcademicRecords();
     } catch (err) {
@@ -261,7 +237,6 @@ export default function CertificationCenter() {
         </div>
       </div>
 
-      {/* Search */}
       <div className="relative group">
         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={24} />
         <input 
@@ -271,7 +246,6 @@ export default function CertificationCenter() {
         />
       </div>
 
-      {/* Students Table */}
       <div className="bg-white rounded-[2.5rem] border border-orange-50 shadow-xl overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -298,14 +272,32 @@ export default function CertificationCenter() {
                 <td className="px-10 py-6 text-right">
                   {student.status === 'completed' ? (
                     <button 
-                      onClick={() => printCombinedDoc(student, Array(16).fill(student.marks_obtained/16))} // Basic fallback for reprint
+                      onClick={() => {
+                        const savedMods = student.module_data?.map(m => m.name) || DEFAULT_MODULES;
+                        const savedMarks = student.module_data?.map(m => m.marks) || [];
+                        printCombinedDoc(student, savedMods, savedMarks);
+                      }}
                       className="p-3 bg-slate-100 rounded-xl hover:bg-orange-500 hover:text-white transition-all"
                     >
                       <Printer size={20} />
                     </button>
                   ) : (
                     <button 
-                      onClick={() => { setSelectedForGrad(student); setShowGradModal(true); }}
+                      onClick={() => { 
+                        setSelectedForGrad(student);
+                        // Check if student already has a curriculum saved
+                        if (student.module_data && student.module_data.length > 0) {
+                          setActiveModules(student.module_data.map(m => m.name));
+                          setGradForm({
+                            grade: student.grade || 'Excellent',
+                            moduleMarks: student.module_data.map(m => m.marks)
+                          });
+                        } else {
+                          setActiveModules(DEFAULT_MODULES);
+                          setGradForm({ grade: 'Excellent', moduleMarks: Array(DEFAULT_MODULES.length).fill(85) });
+                        }
+                        setShowGradModal(true); 
+                      }}
                       className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-2xl font-black text-xs hover:bg-slate-900 transition-all shadow-lg"
                     >
                       <GraduationCap size={18} /> Graduate
@@ -318,55 +310,67 @@ export default function CertificationCenter() {
         </table>
       </div>
 
-      {/* Full Module Editor Modal */}
       {showGradModal && selectedForGrad && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md overflow-y-auto">
-          <div className="bg-white w-full max-w-5xl rounded-[3rem] shadow-2xl overflow-hidden my-8">
+          <div className="bg-white w-full max-w-6xl rounded-[3rem] shadow-2xl overflow-hidden my-8">
             <div className="p-8 bg-slate-900 text-white flex justify-between items-center">
               <div>
-                <h3 className="text-2xl font-black italic">Marksheet & Result Editor</h3>
+                <h3 className="text-2xl font-black italic">Curriculum & Result Editor</h3>
                 <p className="text-orange-400 text-xs font-bold uppercase tracking-widest">{selectedForGrad.full_name}</p>
               </div>
               <button onClick={() => setShowGradModal(false)} className="p-2 bg-white/10 rounded-2xl hover:bg-white/20"><X size={24}/></button>
             </div>
 
             <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left & Middle: Module Inputs */}
               <div className="lg:col-span-2 space-y-4">
-                <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <FileText size={16} className="text-orange-500" /> Module Wise Marks (Max 100)
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                  {MODULE_NAMES.map((name, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl group hover:border-orange-200 transition-colors">
-                      <span className="text-[11px] font-bold text-slate-600 line-clamp-1 w-4/5">{index + 1}. {name}</span>
+                <div className="flex justify-between items-center">
+                  <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <FileText size={16} className="text-orange-500" /> Module Wise Marks (Max 100)
+                  </h4>
+                  <button onClick={addModule} className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black hover:bg-emerald-600 transition-all">
+                    <Plus size={14} /> Add Module
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                  {activeModules.map((name, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-100 rounded-xl group hover:border-orange-200 transition-colors">
+                      <span className="text-[11px] font-black text-slate-300 w-5">{index + 1}</span>
+                      <input 
+                        type="text"
+                        value={name}
+                        onChange={(e) => updateModuleName(index, e.target.value)}
+                        className="flex-1 bg-transparent border-none font-bold text-slate-700 outline-none focus:text-orange-600 text-xs"
+                      />
                       <input 
                         type="number" 
                         max="100"
                         className="w-14 p-2 bg-white border border-slate-200 rounded-lg text-center font-black text-orange-600 outline-none focus:ring-2 focus:ring-orange-500/20"
-                        value={gradForm.moduleMarks[index]}
+                        value={gradForm.moduleMarks[index] || 0}
                         onChange={(e) => {
                           const newMarks = [...gradForm.moduleMarks];
                           newMarks[index] = parseInt(e.target.value) || 0;
                           setGradForm({...gradForm, moduleMarks: newMarks});
                         }}
                       />
+                      <button onClick={() => removeModule(index)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Right Side: Summary & Actions */}
               <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 space-y-8">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calculated Performance</label>
                   <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm text-center">
                     <p className="text-4xl font-black text-slate-900">{currentTotal}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Total Marks / 1600</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">Total Marks / {maxMarks}</p>
                     <div className="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-orange-500 transition-all duration-500" style={{width: `${(currentTotal/1600)*100}%`}}></div>
+                      <div className="h-full bg-orange-500 transition-all duration-500" style={{width: `${(currentTotal/maxMarks)*100}%`}}></div>
                     </div>
-                    <p className="mt-2 text-xs font-black text-orange-500 italic">{((currentTotal/1600)*100).toFixed(2)}% Percentage</p>
+                    <p className="mt-2 text-xs font-black text-orange-500 italic">{((currentTotal/maxMarks)*100).toFixed(2)}% Percentage</p>
                   </div>
                 </div>
 
@@ -398,12 +402,10 @@ export default function CertificationCenter() {
         </div>
       )}
 
-      {/* Internal Scrollbar CSS */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
       `}</style>
     </div>
   );
