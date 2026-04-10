@@ -1,21 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, User, Mail, Phone, BookOpen, Calendar, 
   ShieldCheck, Loader2, MapPin, GraduationCap, Users,
-  Search
+  Search, Camera, X
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from "react-hot-toast";
 
 export default function RegisterStudent() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [availableCourses, setAvailableCourses] = useState([]);
   const [fetchingCourses, setFetchingCourses] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Image States
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
-  // Get current date in YYYY-MM-DD format for the default value
   const today = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
@@ -28,10 +32,9 @@ export default function RegisterStudent() {
     dob: "",
     address: "",
     education: "",
-    // roll_no is removed - handled by DB
     course_name: "", 
     total_fee: null, 
-    admission_date: today, // Defaulted to today
+    admission_date: today,
     status: "active",
     photo_url: null
   });
@@ -59,32 +62,74 @@ export default function RegisterStudent() {
     fetchCourses();
   }, []);
 
+  // Handle Image Selection
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Image size should be less than 2MB");
+        return;
+      }
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Upload Image to Supabase Storage
+  const uploadImage = async (file) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}-${Date.now()}.${fileExt}`;
+    const filePath = `photos/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('DivyaInstitite')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('DivyaInstitite')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      let publicImageUrl = null;
+
+      // 1. Upload image if exists
+      if (imageFile) {
+        publicImageUrl = await uploadImage(imageFile);
+      }
+
+      // 2. Prepare final data
+      const finalData = {
+        ...formData,
+        photo_url: publicImageUrl
+      };
+
+      // 3. Insert into Database
+      const { error } = await supabase.from("students").insert([finalData]);
+      if (error) throw error;
+
+      toast.success("Student registered successfully!");
+      navigate('/students'); 
+    } catch (err) {
+      toast.error(err.message || "An error occurred during registration");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredCourses = useMemo(() => {
     return availableCourses.filter(course => 
       course.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [searchQuery, availableCourses]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.course_name) {
-      toast.error("Please select a course");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // We do not send roll_no; Supabase will generate it automatically
-      const { error } = await supabase.from("students").insert([formData]);
-      if (error) throw error;
-      toast.success("Student registered successfully!");
-      navigate('/students'); 
-    } catch (err) {
-      toast.error(err.message || "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const inputStyles = "w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-orange-500 outline-none transition-all font-semibold text-sm text-slate-700 disabled:opacity-50";
   const labelStyles = "flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1 mb-1";
@@ -93,25 +138,54 @@ export default function RegisterStudent() {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 animate-in fade-in duration-500">
       <div className="max-w-3xl mx-auto">
-        <button 
-          onClick={() => navigate(-1)}
-          className="group flex items-center gap-2 text-slate-500 hover:text-orange-600 mb-4 text-sm font-bold transition-all"
-        >
+        <button onClick={() => navigate(-1)} className="group flex items-center gap-2 text-slate-500 hover:text-orange-600 mb-4 text-sm font-bold transition-all">
           <ArrowLeft size={16} /> Back to Directory
         </button>
 
         <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
-          <div className="p-6 bg-orange-500 text-white relative overflow-hidden">
+          <div className="p-6 bg-orange-500 text-white relative overflow-hidden flex justify-between items-center">
              <div className="relative z-10">
                 <h1 className="text-2xl font-black italic tracking-tight">Student Enrollment</h1>
                 <p className="text-orange-100 text-xs font-medium">Admission Date: {formData.admission_date}</p>
              </div>
-             <User size={100} className="absolute -right-4 -bottom-4 text-orange-400/20 rotate-12" />
+             
+             {/* Photo Upload Trigger */}
+             <div className="relative z-10">
+               <input 
+                 type="file" 
+                 ref={fileInputRef} 
+                 hidden 
+                 accept="image/*" 
+                 onChange={handleImageChange} 
+               />
+               <div 
+                 onClick={() => fileInputRef.current.click()}
+                 className="w-20 h-20 rounded-2xl bg-orange-400/30 border-2 border-dashed border-orange-200 flex items-center justify-center cursor-pointer hover:bg-orange-400/50 transition-all overflow-hidden relative group"
+               >
+                 {imagePreview ? (
+                   <>
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                      <Camera size={20} className="text-white" />
+                    </div>
+                   </>
+                 ) : (
+                   <Camera size={24} className="text-orange-100" />
+                 )}
+               </div>
+               {imagePreview && (
+                 <button 
+                  onClick={(e) => { e.stopPropagation(); setImageFile(null); setImagePreview(null); }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-lg hover:bg-red-600 transition-all"
+                 >
+                   <X size={12} />
+                 </button>
+               )}
+             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
-            
-            {/* Section 1: Personal */}
+            {/* Sections remain identical... */}
             <div className="space-y-4">
               <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 border-b border-orange-100 pb-2">
                 <User size={16} className="text-orange-500" /> Personal Information
@@ -152,7 +226,7 @@ export default function RegisterStudent() {
               </div>
             </div>
 
-            {/* Section 2: Contact */}
+            {/* Contact Section */}
             <div className="space-y-4">
               <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 border-b border-orange-100 pb-2">
                 <Phone size={16} className="text-orange-500" /> Contact & Address
@@ -185,7 +259,7 @@ export default function RegisterStudent() {
               </div>
             </div>
 
-            {/* Section 3: Academic */}
+            {/* Academic Section */}
             <div className="space-y-4">
               <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 border-b border-orange-100 pb-2">
                 <BookOpen size={16} className="text-orange-500" /> Academic
@@ -238,10 +312,10 @@ export default function RegisterStudent() {
               </div>
             </div>
 
-            {/* Compact Submit */}
+            {/* Submit */}
             <div className="pt-4 border-t border-slate-100 flex gap-3">
               <button 
-                type="submit" disabled={loading || fetchingCourses}
+                type="submit" disabled={loading}
                 className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? <Loader2 className="animate-spin" size={18} /> : <ShieldCheck size={18} />}

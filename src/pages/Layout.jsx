@@ -22,6 +22,7 @@ const navItems = [
   { name: "Students", path: "/students", icon: <Users size={20} /> },
   { name: "Fee Payments", path: "/fees", icon: <CreditCard size={20} /> },
   { name: "Assignments", path: "/tasks", icon: <Coffee size={20} /> },
+  { name: "New Request", path: "/requests", icon: <Coffee size={20} /> },
   { name: "Certificates", path: "/certificates", icon: <GraduationCap size={20} /> },
   { name: "Institute Settings", path: "/settings", icon: <Settings size={20} /> }
 ];
