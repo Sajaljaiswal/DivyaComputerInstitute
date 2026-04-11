@@ -1,9 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { FiSend, FiUser, FiPhone, FiMapPin, FiBook, FiEdit3 } from 'react-icons/fi';
 import { FiBookOpen, FiCode, FiAward, FiArrowRight, FiCheckCircle, FiMonitor, FiSmartphone, FiCpu, FiUserPlus, FiHelpCircle } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export default function DivyaComputerInstitute() {
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({ name: '', phone: '', address: '', course: '', description: '' });
+  const [status, setStatus] = useState({ type: '', message: '' });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus({ type: 'loading', message: 'Submitting...' });
+
+    const { error } = await supabase
+      .from('student_requests')
+      .insert([formData]);
+
+    if (error) {
+      setStatus({ type: 'error', message: 'Something went wrong. Please try again.' });
+    } else {
+      setStatus({ type: 'success', message: 'Request submitted successfully!' });
+      setFormData({ name: '', phone: '', address: '', course: 'Software Development' });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FFFBF7] font-sans text-slate-900 scroll-smooth">
@@ -162,6 +182,97 @@ export default function DivyaComputerInstitute() {
         </div>
       </section>
 
+    <section id="enroll" className="px-8 py-24 bg-orange-50">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-[3rem] shadow-2xl shadow-orange-200/40 overflow-hidden grid md:grid-cols-5">
+            
+            {/* Left Sidebar Info */}
+            <div className="md:col-span-2 bg-slate-900 p-10 text-white flex flex-col justify-center relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-32 h-32 bg-orange-500/20 blur-3xl rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+                <h2 className="text-3xl font-black mb-4 relative z-10">Quick <span className="text-orange-500">Enrollment</span></h2>
+                <p className="text-slate-400 mb-8 text-sm leading-relaxed">
+                  Enter the course you're interested in and any specific questions you have. Our team will prepare a customized roadmap for you.
+                </p>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-sm font-medium"><FiCheckCircle className="text-orange-500" /> Verified Certifications</div>
+                    <div className="flex items-center gap-3 text-sm font-medium"><FiCheckCircle className="text-orange-500" /> 1-on-1 Mentorship</div>
+                    <div className="flex items-center gap-3 text-sm font-medium"><FiCheckCircle className="text-orange-500" /> Lab Access 24/7</div>
+                </div>
+            </div>
+
+            {/* Form Side */}
+            <form onSubmit={handleSubmit} className="md:col-span-3 p-10 space-y-6 bg-white">
+              <div className="grid sm:grid-cols-2 gap-6">
+                <InputGroup icon={<FiUser />} label="Your Name">
+                  <input 
+                    required
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                    placeholder="e.g. Rahul Kumar"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  />
+                </InputGroup>
+                
+                <InputGroup icon={<FiPhone />} label="Phone Number">
+                  <input 
+                    required
+                    type="tel"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                    placeholder="+91 98765 43210"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  />
+                </InputGroup>
+              </div>
+
+              <InputGroup icon={<FiBook />} label="Course Name">
+                <input 
+                  required
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                  placeholder="e.g. Python Full Stack"
+                  value={formData.course}
+                  onChange={(e) => setFormData({...formData, course: e.target.value})}
+                />
+              </InputGroup>
+
+              <InputGroup icon={<FiMapPin />} label="Your Address">
+                <input 
+                  required
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                  placeholder="Ghazipur, Uttar Pradesh"
+                  value={formData.address}
+                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                />
+              </InputGroup>
+
+              <InputGroup icon={<FiEdit3 />} label="Description / Message">
+                <textarea 
+                  rows="3"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                  placeholder="Tell us about your background or what you want to learn..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                />
+              </InputGroup>
+
+              <button 
+                type="submit"
+                disabled={status.type === 'loading'}
+                className="w-full py-4 bg-orange-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-orange-600 active:scale-[0.98] transition-all shadow-lg shadow-orange-200 disabled:opacity-50"
+              >
+                {status.type === 'loading' ? 'Processing...' : <>Submit Request <FiSend /></>}
+              </button>
+
+              {status.message && (
+                <div className={`p-4 rounded-xl text-center text-xs font-bold ${status.type === 'error' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
+                  {status.message}
+                </div>
+              )}
+            </form>
+          </div>
+        </div>
+      </section>
+
       {/* --- Footer --- */}
       <footer className="bg-slate-50 border-t border-slate-200 py-16 px-8">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-12">
@@ -222,6 +333,16 @@ function Point({ icon, text }) {
             <p className="font-medium">{text}</p>
         </div>
     )
+}
+function InputGroup({ icon, label, children }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] uppercase tracking-widest font-black text-slate-400 flex items-center gap-2">
+        {icon} {label}
+      </label>
+      {children}
+    </div>
+  );
 }
 
 function FAQItem({ question, answer }) {
