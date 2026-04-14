@@ -14,7 +14,9 @@ export default function StudentTable({ students, loading, onPrint, onView, onEdi
           <thead>
             <tr className="bg-slate-50 border-b border-slate-100">
               <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student</th>
+              <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Admission Date</th>
               <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Course</th>
+              <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
               <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
             </tr>
           </thead>
@@ -22,7 +24,9 @@ export default function StudentTable({ students, loading, onPrint, onView, onEdi
             {students.map((student) => (
               <tr key={student.id} className="hover:bg-slate-50/80 transition-all">
                 <td className="px-6 py-3 font-bold text-sm">{student.full_name}</td>
+                <td className="px-6 py-3 font-bold text-sm">{student.admission_date}</td>
                 <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{student.course_name}</td>
+                <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">{student.status}</td>
                 <td className="px-6 py-3 text-right">
                   <div className="flex justify-end gap-1">
                     <button onClick={() => onPrint(student)} className="p-1.5 text-slate-400 hover:text-orange-600"><Printer size={16} /></button>

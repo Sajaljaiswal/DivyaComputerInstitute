@@ -1,6 +1,10 @@
 export const printCombinedDoc = (student, modulesList, marksArray) => {
-  const printWindow = window.open('', '_blank');
-  const issueDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const printWindow = window.open("", "_blank");
+  const issueDate = new Date().toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
   const totalSecured = marksArray.reduce((a, b) => a + (parseInt(b) || 0), 0);
   const totalPossible = modulesList.length * 100;
   const percentage = ((totalSecured / totalPossible) * 100).toFixed(2);
@@ -84,9 +88,10 @@ export const printCombinedDoc = (student, modulesList, marksArray) => {
               </div>
 
               <div class="photo-box">
-  ${student.photo_url 
-    ? `<img src="${student.photo_url}" style="width:100%; height:100%; object-fit:cover;" />`
-    : `STUDENT PHOTO`
+  ${
+    student.photo_url
+      ? `<img src="${student.photo_url}" style="width:100%; height:100%; object-fit:cover;" />`
+      : `STUDENT PHOTO`
   }
 </div>
               
@@ -114,13 +119,17 @@ export const printCombinedDoc = (student, modulesList, marksArray) => {
                   <tr>
                     <td colspan="3">
                       <table style="width:100%; border-collapse:collapse;" class="inner-row">
-                        ${modulesList.map((name, i) => `
+                        ${modulesList
+                          .map(
+                            (name, i) => `
                           <tr>
                             <td style="width:75%; font-weight:bold; color: #444;">${name}</td>
                             <td style="width:12.5%; text-align:center; border-left:1px solid #ddd !important;">100</td>
                             <td style="width:12.5%; text-align:center; border-left:1px solid #ddd !important; font-weight:bold;">${marksArray[i] || 0}</td>
                           </tr>
-                        `).join('')}
+                        `,
+                          )
+                          .join("")}
                       </table>
                     </td>
                     <td class="summary-panel">
@@ -161,6 +170,6 @@ export const printCombinedDoc = (student, modulesList, marksArray) => {
       </body>
     </html>
   `);
-//   printWindow.document.close();
+  //   printWindow.document.close();
   printWindow.focus();
 };
